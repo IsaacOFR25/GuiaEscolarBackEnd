@@ -1,47 +1,79 @@
 const { Router } = require("express");
-const axios = require("axios");
 const router = Router();
 
-// Ruta para obtener todas las rutas desde la API externa
-router.get("/", async (req, res) => {
-  try {
-    const response = await axios.get("https://backend-apimaqueta-334c971f153e.herokuapp.com/rutas");
-    res.json(response.data);
-  } catch (error) {
-    res.status(500).json({ error: "Error al obtener las rutas" });
-  }
+router.get("/", (req, res) => {
+  //Envia json infoPuntos.json el objeto "rutas" como respuesta
+  const infoPuntos = require("./../../../infoPuntos.json");
+  res.json(infoPuntos.rutas);
 });
 
-// Ruta para agregar una nueva ruta a la API externa
-router.post("/agregar", async (req, res) => {
-  try {
-    const nuevaRuta = req.body;
-    const response = await axios.post("https://backend-apimaqueta-334c971f153e.herokuapp.com/rutas", nuevaRuta);
-    res.status(200).send("Ruta agregada");
-  } catch (error) {
-    res.status(500).json({ error: "Error al agregar la ruta" });
-  }
+//Metodo para agregar una nueva ruta
+router.post("/agregar", (req, res) => {
+  //Obtiene el objeto "rutas" del archivo infoPuntos.json
+  const infoPuntos = require("./../../../infoPuntos.json");
+  const rutas = infoPuntos.rutas;
+  //Obtiene el objeto "ruta" que se envia desde el front-end
+  const nuevaRuta = req.body;
+  console.log(nuevaRuta);
+  //Agrega el objeto "ruta" al objeto "rutas"
+  rutas.push(nuevaRuta);
+  //Escribe el objeto "rutas" en el archivo infoPuntos.json
+  const fs = require("fs");
+  fs.writeFile(
+    "./infoPuntos.json",
+    JSON.stringify(infoPuntos, null, 2),
+    (err) => {
+      if (err) throw err;
+      console.log("Archivo modificado");
+    }
+  );
+  //responder codigo 200
+  res.status(200).send("Ruta agregada");
 });
 
-// Ruta para eliminar una ruta específica de la API externa
-router.delete("/eliminar/:id", async (req, res) => {
+//Metodo para eliminar una ruta
+router.delete("/eliminar/:id", (req, res) => {
+  //Obtiene el id de la ruta a eliminar
   const id = req.params.id;
-  try {
-    const response = await axios.delete(`https://backend-apimaqueta-334c971f153e.herokuapp.com/rutas/${id}`);
-    res.sendStatus(200);
-  } catch (error) {
-    res.status(500).json({ error: "Error al eliminar la ruta" });
-  }
+  //Obtiene el archivo infoPuntos.json
+  const infoPuntos = require("./../../../infoPuntos.json");
+  //Filtra el arreglo de tarjetas para eliminar la tarjeta con el id recibido
+  infoPuntos.rutas = infoPuntos.rutas.filter((ruta) => {
+    return ruta.id !== id;
+  });
+  //Escribe el archivo infoPuntos.json sin la tarjeta eliminada
+  const fs = require("fs");
+  fs.writeFile(
+    "./infoPuntos.json",
+    JSON.stringify(infoPuntos),
+    "utf8",
+    (err) => {
+      if (err) {
+        console.log(err);
+        //Envia un codigo de error 500
+        res.status(500).send("Error al eliminar ruta");
+      }
+    }
+  );
+  //Envia un codigo 200 como respuesta
+  res.sendStatus(200);
 });
 
-// Ruta para obtener una ruta específica desde la API externa
-router.get("/:id", async (req, res) => {
+//Metodo para obtener una ruta especifica
+router.get("/:id", (req, res) => {
+  //Obtiene el id de la ruta a obtener
   const id = req.params.id;
-  try {
-    const response = await axios.get(`https://backend-apimaqueta-334c971f153e.herokuapp.com/rutas/${id}`);
-    res.json(response.data);
-  } catch (error) {
-    res.status(404).json({ error: "Ruta no encontrada" });
+  //Obtiene el archivo infoPuntos.json
+  const infoPuntos = require("./../../../infoPuntos.json");
+  //Filtra el arreglo de rutas para obtener la ruta con el id recibido
+  const ruta = infoPuntos.rutas.filter((ruta) => {
+    return ruta.id === id;
+  });
+  //Si la ruta existe, la envia como respuesta, de lo contrario envia un codigo 404
+  if (ruta.length > 0) {
+    res.json(ruta[0]);
+  } else {
+    res.sendStatus(404);
   }
 });
 
